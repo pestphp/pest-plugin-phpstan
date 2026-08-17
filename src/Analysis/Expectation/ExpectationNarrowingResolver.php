@@ -20,12 +20,16 @@ final class ExpectationNarrowingResolver
 {
     private const string REBIND_METHOD = 'and';
 
+    private const string REBIND_PARAMETER = 'value';
+
     private const string NEGATE_METHOD = 'not';
 
     private const array PASSTHROUGH_METHODS = ['when', 'unless', 'sequence', 'match', 'ray'];
 
     /** @var array<string, bool> Matcher name => uses loose (==) comparison */
     private const array COMPARISON_METHODS = ['toBe' => false, 'toEqual' => true];
+
+    private const string COMPARISON_PARAMETER = 'expected';
 
     public function __construct(
         private readonly ExpectationMatcherRegistry $matcherRegistry,
@@ -65,6 +69,10 @@ final class ExpectationNarrowingResolver
                 return $narrowings;
             }
 
+            if ($link->isFirstClassCallable()) {
+                return $narrowings;
+            }
+
             /** @var Identifier $name */
             $name = $link->name;
             $methodName = $name->name;
@@ -76,11 +84,16 @@ final class ExpectationNarrowingResolver
             }
 
             if ($methodName === self::REBIND_METHOD) {
-                $subject = $link->getArgs()[0]->value ?? null;
-                if (! $subject instanceof Expr) {
+                $rebound = MatcherArgument::first($link, self::REBIND_PARAMETER);
+                if (! $rebound instanceof Expr) {
                     return $narrowings;
                 }
 
+                if ($this->mayBeExpectation($rebound, $scope)) {
+                    return $narrowings;
+                }
+
+                $subject = $rebound;
                 $negated = false;
 
                 continue;
@@ -95,7 +108,7 @@ final class ExpectationNarrowingResolver
             }
 
             if (isset(self::COMPARISON_METHODS[$methodName])) {
-                $compared = $link->getArgs()[0]->value ?? null;
+                $compared = MatcherArgument::first($link, self::COMPARISON_PARAMETER);
                 if ($compared instanceof Expr) {
                     $narrowings[] = ExpectationNarrowing::comparison($subject, $compared, self::COMPARISON_METHODS[$methodName], $negated);
                 }
@@ -106,7 +119,10 @@ final class ExpectationNarrowingResolver
             }
 
             $assertedType = $this->matcherRegistry->assertedTypeFor($methodName, $link, $scope);
-            if ($assertedType instanceof Type) {
+
+            $sound = ! $negated || $this->matcherRegistry->assertsExactTypeFor($methodName, $link, $scope);
+
+            if ($assertedType instanceof Type && $sound) {
                 $narrowings[] = ExpectationNarrowing::type($subject, $assertedType, $negated);
             }
 
@@ -114,6 +130,12 @@ final class ExpectationNarrowingResolver
         }
 
         return $narrowings;
+    }
+
+    /** @return bool True when and() may unwrap the argument to an inner value we cannot track */
+    private function mayBeExpectation(Expr $expr, Scope $scope): bool
+    {
+        return ! new ObjectType(Expectation::class)->isSuperTypeOf($scope->getType($expr))->no();
     }
 
     private function resolveSubject(Expr $root, Scope $scope): ?Expr

@@ -28,6 +28,11 @@ final class ExpectationMatcherRegistry
         return $this->assertionRegistry->assertedTypeFor($methodName, $methodCall, $scope);
     }
 
+    public function assertsExactTypeFor(string $methodName, MethodCall $methodCall, Scope $scope): bool
+    {
+        return $this->assertionRegistry->assertsExactTypeFor($methodName, $methodCall, $scope);
+    }
+
     public function metadataFor(string $methodName): ?MatcherSemanticMetadata
     {
         if (array_key_exists($methodName, $this->metadataCache)) {
