@@ -11,4 +11,23 @@ This repository contains the Pest Plugin for PHPStan.
     - Instagram: **[instagram.com/enunomaduro](https://www.instagram.com/enunomaduro)**
     - Tiktok: **[tiktok.com/@enunomaduro](https://www.tiktok.com/@enunomaduro)**
 
+## Type narrowing
+
+Expectations narrow the types of the values they assert, in the expectation
+chain and in the code that follows — just like `assert*` methods do in PHPUnit:
+
+```php
+function process(int|string $value): void
+{
+    expect($value)->toBeInt();
+
+    // $value is int here
+}
+```
+
+Narrowing understands chains (`->and($other)` switches to the other value),
+negation (`->not->toBeNull()` removes `null`), and identity (`->toBe(1)`
+narrows to `1`). When a chain transforms the value (`->json()`, `->each`,
+higher order expectations), narrowing stops for the rest of that chain.
+
 Pest is an open-sourced software licensed under the **[MIT license](https://opensource.org/licenses/MIT)**.
