@@ -26,8 +26,9 @@ function process(int|string $value): void
 ```
 
 Narrowing understands chains (`->and($other)` switches to the other value),
-negation (`->not->toBeNull()` removes `null`), and identity (`->toBe(1)`
-narrows to `1`). When a chain transforms the value (`->json()`, `->each`,
-higher order expectations), narrowing stops for the rest of that chain.
+negation (`->not->toBeNull()` removes `null`), identity (`->toBe(1)` narrows to
+`1`) and loose equality (`->toEqual(1)` narrows to everything `== 1`). When a
+chain transforms the value (`->json()`, `->each`, higher order expectations),
+narrowing stops for the rest of that chain.
 
 Pest is an open-sourced software licensed under the **[MIT license](https://opensource.org/licenses/MIT)**.
