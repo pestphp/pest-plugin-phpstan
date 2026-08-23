@@ -6,6 +6,9 @@ namespace ExpectationNarrowing;
 
 use LogicException;
 use RuntimeException;
+use Tests\Type\Fixtures\Archivable;
+use Tests\Type\Fixtures\Post;
+use Tests\Type\Fixtures\Publishable;
 
 use function PHPStan\Testing\assertType;
 
@@ -296,4 +299,35 @@ function testFirstClassCallableChainDoesNotNarrow(): void
     expect($value)->not->toBeNull()->and($other)->toBeInt(...);
     assertType('string|null', $value);
     assertType('int|string', $other);
+}
+
+function testToBeInstanceOfKeepsTheAlreadyMoreSpecificSubjectType(): void
+{
+    $post = new Post;
+    expect($post)->toBeInstanceOf(Publishable::class);
+    assertType('Tests\Type\Fixtures\Post', $post);
+}
+
+function testChainedInterfaceAssertionsKeepTheSubjectClassPastTheStatement(): void
+{
+    $post = new Post;
+    $expectation = expect($post)->toBeInstanceOf(Publishable::class)->toBeInstanceOf(Archivable::class);
+    assertType('Pest\Expectation<Tests\Type\Fixtures\Post>', $expectation);
+    assertType('Tests\Type\Fixtures\Post', $post);
+}
+
+function testToBeInstanceOfOnAUnionKeepsTheImplementingClass(): void
+{
+    /** @var Post|string $value */
+    $value = new Post;
+    expect($value)->toBeInstanceOf(Publishable::class);
+    assertType('Tests\Type\Fixtures\Post', $value);
+}
+
+function testToBeStringKeepsTheConstantString(): void
+{
+    /** @var 'a'|int $value */
+    $value = 'a';
+    expect($value)->toBeString();
+    assertType("'a'", $value);
 }

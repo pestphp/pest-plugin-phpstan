@@ -6,6 +6,7 @@ namespace Pest\PHPStan\Type\Pest;
 
 use Pest\PHPStan\Analysis\Expectation\ExpectationChainSubjectResolver;
 use Pest\PHPStan\Analysis\Expectation\ExpectationMatcherRegistry;
+use Pest\PHPStan\Analysis\Expectation\ExpectationTypeNarrower;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\MethodCall;
@@ -27,10 +28,14 @@ final class ExpectationChainSubjectNarrowingExtension implements ExpressionTypeR
     /** @var array<string, list<array{0: string, 1: MethodCall, 2: int, 3: int}>> file path => list of [printed subject, toBeInstanceOf() call, enclosing statement start pos, end pos] */
     private array $chainFactsCache = [];
 
+    /** @var array<int, true> Node ids whose declared type is being resolved; getType() declines for them so the scope resolves the subject on its own */
+    private array $resolvingDeclaredTypes = [];
+
     public function __construct(
         private readonly PestFileDiscoverer $fileDiscoverer,
         private readonly ExpectationMatcherRegistry $matcherRegistry,
         private readonly ExpectationChainSubjectResolver $subjectResolver,
+        private readonly ExpectationTypeNarrower $typeNarrower,
     ) {
         $this->printer = new Standard;
     }
@@ -38,6 +43,10 @@ final class ExpectationChainSubjectNarrowingExtension implements ExpressionTypeR
     public function getType(Expr $expr, Scope $scope): ?Type
     {
         if (! $expr instanceof Variable && ! $expr instanceof ArrayDimFetch && ! $expr instanceof PropertyFetch) {
+            return null;
+        }
+
+        if (isset($this->resolvingDeclaredTypes[spl_object_id($expr)])) {
             return null;
         }
 
@@ -82,7 +91,23 @@ final class ExpectationChainSubjectNarrowingExtension implements ExpressionTypeR
                 : $assertedType;
         }
 
-        return $narrowedType;
+        if (! $narrowedType instanceof Type) {
+            return null;
+        }
+
+        return $this->typeNarrower->narrow($this->declaredTypeOf($expr, $scope), $narrowedType);
+    }
+
+    /** @return Type The subject's type without this extension's narrowing, so a subject that is already more specific than the asserted class keeps its own members */
+    private function declaredTypeOf(Expr $expr, Scope $scope): Type
+    {
+        $this->resolvingDeclaredTypes[spl_object_id($expr)] = true;
+
+        try {
+            return $scope->getType($expr);
+        } finally {
+            unset($this->resolvingDeclaredTypes[spl_object_id($expr)]);
+        }
     }
 
     /**

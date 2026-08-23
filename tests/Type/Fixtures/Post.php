@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Type\Fixtures;
 
-final class Post
+final class Post implements Archivable, Publishable
 {
     public string $title;
 
@@ -18,4 +18,8 @@ final class Post
     {
         return new self;
     }
+
+    public function publish(): void {}
+
+    public function archive(): void {}
 }

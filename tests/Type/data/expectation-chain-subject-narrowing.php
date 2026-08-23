@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace ExpectationChainSubjectNarrowing;
 
+use Tests\Type\Fixtures\Archivable;
 use Tests\Type\Fixtures\Author;
 use Tests\Type\Fixtures\Post;
+use Tests\Type\Fixtures\Publishable;
 
 use function PHPStan\Testing\assertType;
 
@@ -77,4 +79,31 @@ function testNarrowingAlsoPersistsPastTheStatement(): void
         ->and(assertType(Post::class, $items[0]));
 
     assertType(Post::class, $items[0]);
+}
+
+function testInterfaceAssertionKeepsTheAlreadyMoreSpecificSubject(): void
+{
+    $post = new Post;
+
+    expect($post)->toBeInstanceOf(Publishable::class)
+        ->and(assertType(Post::class, $post))
+        ->and(assertType('string', $post->title));
+}
+
+function testChainedInterfaceAssertionsKeepTheSubjectClass(): void
+{
+    $post = new Post;
+
+    expect($post)->toBeInstanceOf(Publishable::class)
+        ->and($post)->toBeInstanceOf(Archivable::class)
+        ->and(assertType(Post::class, $post));
+}
+
+function testInterfaceAssertionOnAUnionKeepsTheImplementingClass(): void
+{
+    /** @var Post|string $subject */
+    $subject = new Post;
+
+    expect($subject)->toBeInstanceOf(Publishable::class)
+        ->and(assertType(Post::class, $subject));
 }
