@@ -27,16 +27,22 @@ final class ExpectationChainSubjectNarrowingExtension implements ExpressionTypeR
     /** @var array<string, list<array{0: string, 1: MethodCall, 2: int, 3: int}>> file path => list of [printed subject, toBeInstanceOf() call, enclosing statement start pos, end pos] */
     private array $chainFactsCache = [];
 
+    /** @param bool $narrowingEnabled False leaves every expectation subject at the type it was declared with */
     public function __construct(
         private readonly PestFileDiscoverer $fileDiscoverer,
         private readonly ExpectationMatcherRegistry $matcherRegistry,
         private readonly ExpectationChainSubjectResolver $subjectResolver,
+        private readonly bool $narrowingEnabled = true,
     ) {
         $this->printer = new Standard;
     }
 
     public function getType(Expr $expr, Scope $scope): ?Type
     {
+        if (! $this->narrowingEnabled) {
+            return null;
+        }
+
         if (! $expr instanceof Variable && ! $expr instanceof ArrayDimFetch && ! $expr instanceof PropertyFetch) {
             return null;
         }

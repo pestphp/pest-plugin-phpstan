@@ -24,10 +24,12 @@ final class ExpectationTypeSpecifyingExtension implements MethodTypeSpecifyingEx
 
     /**
      * @param  class-string  $className
+     * @param  bool  $narrowingEnabled
      */
     public function __construct(
         private readonly ExpectationNarrowingResolver $narrowingResolver,
         private readonly string $className,
+        private readonly bool $narrowingEnabled = true,
     ) {}
 
     public function getClass(): string
@@ -42,7 +44,7 @@ final class ExpectationTypeSpecifyingExtension implements MethodTypeSpecifyingEx
 
     public function isMethodSupported(MethodReflection $methodReflection, MethodCall $node, TypeSpecifierContext $context): bool
     {
-        return $context->null();
+        return $this->narrowingEnabled && $context->null();
     }
 
     public function specifyTypes(MethodReflection $methodReflection, MethodCall $node, Scope $scope, TypeSpecifierContext $context): SpecifiedTypes

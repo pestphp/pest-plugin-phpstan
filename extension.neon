@@ -5,6 +5,13 @@ parameters:
         - src
     stubFiles:
         - stubs/DescribeCall.stub
+    pest:
+        expectationNarrowing: true
+
+parametersSchema:
+    pest: structure([
+        expectationNarrowing: bool()
+    ])
 
 services:
     -
@@ -38,6 +45,7 @@ services:
         class: Pest\PHPStan\Type\Pest\ExpectationTypeSpecifyingExtension
         arguments:
             className: Pest\Expectation
+            narrowingEnabled: %pest.expectationNarrowing%
         tags:
             - phpstan.typeSpecifier.methodTypeSpecifyingExtension
 
@@ -45,6 +53,7 @@ services:
         class: Pest\PHPStan\Type\Pest\ExpectationTypeSpecifyingExtension
         arguments:
             className: Pest\Mixins\Expectation
+            narrowingEnabled: %pest.expectationNarrowing%
         tags:
             - phpstan.typeSpecifier.methodTypeSpecifyingExtension
 
@@ -52,6 +61,7 @@ services:
         class: Pest\PHPStan\Type\Pest\ExpectationTypeSpecifyingExtension
         arguments:
             className: Pest\Expectations\OppositeExpectation
+            narrowingEnabled: %pest.expectationNarrowing%
         tags:
             - phpstan.typeSpecifier.methodTypeSpecifyingExtension
 
@@ -108,6 +118,8 @@ services:
 
     -
         class: Pest\PHPStan\Type\Pest\ExpectationChainSubjectNarrowingExtension
+        arguments:
+            narrowingEnabled: %pest.expectationNarrowing%
         tags:
             - phpstan.broker.expressionTypeResolverExtension
 
