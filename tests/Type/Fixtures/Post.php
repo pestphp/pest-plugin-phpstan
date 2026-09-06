@@ -18,4 +18,14 @@ final class Post
     {
         return new self;
     }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function belongsToAuthor(Author $author): bool
+    {
+        return $this->author === $author;
+    }
 }

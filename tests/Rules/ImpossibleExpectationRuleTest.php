@@ -340,3 +340,15 @@ test('every impossible matcher combination is reported without false positives',
         ],
     ]);
 });
+
+test('higher order method calls are supported in impossible expectation analysis', function (): void {
+    $this->analyse([
+        __DIR__.'/data/impossible-expectation-higher-order-methods.php',
+    ], [
+        [
+            'Calling toBeInt() on Expectation<string>; assertion is impossible.',
+            22,
+            'The expectation value is string, which can never satisfy toBeInt().',
+        ],
+    ]);
+});

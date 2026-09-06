@@ -9,4 +9,9 @@ final class Author
     public string $name;
 
     public string $email;
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
 }

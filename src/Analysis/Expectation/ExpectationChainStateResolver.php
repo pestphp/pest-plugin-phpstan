@@ -6,6 +6,7 @@ namespace Pest\PHPStan\Analysis\Expectation;
 
 use Countable;
 use Pest\Expectation;
+use Pest\Expectations\HigherOrderExpectation;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
@@ -71,13 +72,19 @@ final class ExpectationChainStateResolver
     private function resolveRootState(MethodCall $methodCall, Scope $scope): ?ExpectationChainState
     {
         $callerType = $scope->getType($methodCall->var);
-        if (! new ObjectType(Expectation::class)->isSuperTypeOf($callerType)->yes()) {
-            return null;
+        if (new ObjectType(Expectation::class)->isSuperTypeOf($callerType)->yes()) {
+            return ExpectationChainState::root(
+                $callerType->getTemplateType(Expectation::class, 'TValue')
+            );
         }
 
-        return ExpectationChainState::root(
-            $callerType->getTemplateType(Expectation::class, 'TValue')
-        );
+        if (new ObjectType(HigherOrderExpectation::class)->isSuperTypeOf($callerType)->yes()) {
+            return ExpectationChainState::root(
+                $callerType->getTemplateType(HigherOrderExpectation::class, 'TValue')
+            );
+        }
+
+        return null;
     }
 
     private function resolveStepResult(
@@ -169,11 +176,15 @@ final class ExpectationChainStateResolver
     private function resolveResultingValueType(MethodCall $methodCall, Scope $scope, Type $fallbackType): Type
     {
         $methodType = $scope->getType($methodCall);
-        if (! new ObjectType(Expectation::class)->isSuperTypeOf($methodType)->yes()) {
-            return $fallbackType;
+        if (new ObjectType(Expectation::class)->isSuperTypeOf($methodType)->yes()) {
+            return $methodType->getTemplateType(Expectation::class, 'TValue');
         }
 
-        return $methodType->getTemplateType(Expectation::class, 'TValue');
+        if (new ObjectType(HigherOrderExpectation::class)->isSuperTypeOf($methodType)->yes()) {
+            return $methodType->getTemplateType(HigherOrderExpectation::class, 'TValue');
+        }
+
+        return $fallbackType;
     }
 
     private function violatesRequirement(Type $valueType, string $requirement): bool

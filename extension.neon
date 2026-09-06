@@ -105,6 +105,11 @@ services:
             - phpstan.ignoreErrorExtension
 
     -
+        class: Pest\PHPStan\Type\Pest\HigherOrderExpectationMethodIgnoreExtension
+        tags:
+            - phpstan.ignoreErrorExtension
+
+    -
         class: Pest\PHPStan\Rules\InvalidThrowsExceptionRule
         arguments:
             reflectionProvider: @reflectionProvider

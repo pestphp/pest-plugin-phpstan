@@ -13,11 +13,14 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Identifier;
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\MissingMethodFromReflectionException;
 use PHPStan\Reflection\MissingPropertyFromReflectionException;
+use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ExpressionTypeResolverExtension;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 
@@ -143,31 +146,95 @@ final class HigherOrderExpectationTypeExtension implements ExpressionTypeResolve
             return null;
         }
 
+        $methodName = $expr->name->name;
         $varType = $scope->getType($expr->var);
-        $higherOrderType = new ObjectType(HigherOrderExpectation::class);
 
-        if (! $higherOrderType->isSuperTypeOf($varType)->yes()) {
+        $expectationType = new ObjectType(Expectation::class);
+        if ($expectationType->isSuperTypeOf($varType)->yes()) {
+            return $this->resolveExpectationMethodCall($varType, $methodName, $expr, $scope);
+        }
+
+        $higherOrderType = new ObjectType(HigherOrderExpectation::class);
+        if ($higherOrderType->isSuperTypeOf($varType)->yes()) {
+            return $this->resolveHigherOrderMethodCall($varType, $methodName, $expr, $scope);
+        }
+
+        return null;
+    }
+
+    private function resolveExpectationMethodCall(Type $varType, string $methodName, MethodCall $expr, Scope $scope): ?Type
+    {
+        if ($this->isKnownExpectationMethod($methodName)) {
             return null;
         }
 
-        $methodName = $expr->name->name;
+        $valueType = $varType->getTemplateType(Expectation::class, 'TValue');
 
+        $methodReturnType = $this->resolveMethodReturnType($valueType, $methodName, $expr, $scope);
+
+        return new GenericObjectType(HigherOrderExpectation::class, [
+            new GenericObjectType(Expectation::class, [$valueType]),
+            $methodReturnType,
+        ]);
+    }
+
+    private function resolveHigherOrderMethodCall(Type $varType, string $methodName, MethodCall $expr, Scope $scope): ?Type
+    {
         if ($methodName === 'and') {
             return $this->resolveHigherOrderAndCall($expr, $scope);
         }
 
-        if (! Expectation::hasMethod($methodName)) {
+        if ($this->isNativeHigherOrderExpectationMethod($methodName)) {
             return null;
         }
 
         $originalType = $varType->getTemplateType(HigherOrderExpectation::class, 'TOriginalValue');
 
-        $originalValueType = $originalType->getTemplateType(Expectation::class, 'TValue');
+        if (Expectation::hasMethod($methodName)) {
+            $originalValueType = $originalType->getTemplateType(Expectation::class, 'TValue');
+
+            return new GenericObjectType(HigherOrderExpectation::class, [
+                $originalType,
+                $originalValueType,
+            ]);
+        }
+
+        $currentValueType = $varType->getTemplateType(HigherOrderExpectation::class, 'TValue');
+
+        $methodReturnType = $this->resolveMethodReturnType($currentValueType, $methodName, $expr, $scope);
 
         return new GenericObjectType(HigherOrderExpectation::class, [
             $originalType,
-            $originalValueType,
+            $methodReturnType,
         ]);
+    }
+
+    private function resolveMethodReturnType(Type $objectType, string $methodName, MethodCall $expr, Scope $scope): Type
+    {
+        if ($objectType->hasMethod($methodName)->no()) {
+            return new MixedType;
+        }
+
+        try {
+            $methodReflection = $objectType->getMethod($methodName, $scope);
+
+            $parametersAcceptor = ParametersAcceptorSelector::selectFromArgs(
+                $scope,
+                $expr->getArgs(),
+                $methodReflection->getVariants(),
+                $methodReflection->getNamedArgumentsVariants(),
+            );
+
+            $returnType = $parametersAcceptor->getReturnType();
+
+            if ($returnType->isVoid()->yes()) {
+                return new NullType;
+            }
+
+            return $returnType;
+        } catch (MissingMethodFromReflectionException) {
+            return new MixedType;
+        }
     }
 
     private function resolveHigherOrderAndCall(MethodCall $expr, Scope $scope): ?Type
@@ -203,5 +270,42 @@ final class HigherOrderExpectationTypeExtension implements ExpressionTypeResolve
 
         return $this->reflectionProvider->getClass(Expectation::class)
             ->hasNativeProperty($propertyName);
+    }
+
+    private function isNativeHigherOrderExpectationMethod(string $methodName): bool
+    {
+        if (! $this->reflectionProvider->hasClass(HigherOrderExpectation::class)) {
+            return false;
+        }
+
+        return $this->reflectionProvider->getClass(HigherOrderExpectation::class)
+            ->hasNativeMethod($methodName);
+    }
+
+    private function isKnownExpectationMethod(string $methodName): bool
+    {
+        if (Expectation::hasMethod($methodName)) {
+            return true;
+        }
+
+        if (! $this->reflectionProvider->hasClass(Expectation::class)) {
+            return false;
+        }
+
+        $classReflection = $this->reflectionProvider->getClass(Expectation::class);
+
+        if ($classReflection->hasNativeMethod($methodName)) {
+            return true;
+        }
+
+        foreach ($classReflection->getResolvedMixinTypes() as $mixinType) {
+            foreach ($mixinType->getObjectClassReflections() as $mixinClassReflection) {
+                if ($mixinClassReflection->hasNativeMethod($methodName)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
