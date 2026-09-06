@@ -352,9 +352,7 @@ final class PestConfigReader
      */
     private function appendBindings(string $bindingKey, array $classNames): void
     {
-        if (! isset($this->directoryMap[$bindingKey])) {
-            $this->directoryMap[$bindingKey] = [];
-        }
+        $this->directoryMap[$bindingKey] ??= [];
 
         array_push($this->directoryMap[$bindingKey], ...$classNames);
     }

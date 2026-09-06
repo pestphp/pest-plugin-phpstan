@@ -51,9 +51,7 @@ final class PestHookPropertyReader
 
         $normalizedFile = $this->fileDiscoverer->normalizePath($filePath);
 
-        if (! isset($this->filePropertyCache[$normalizedFile])) {
-            $this->filePropertyCache[$normalizedFile] = $this->parseTestFile($filePath);
-        }
+        $this->filePropertyCache[$normalizedFile] ??= $this->parseTestFile($filePath);
 
         $properties = $this->filePropertyCache[$normalizedFile];
 
