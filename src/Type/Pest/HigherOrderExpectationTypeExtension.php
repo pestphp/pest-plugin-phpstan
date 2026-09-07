@@ -20,6 +20,7 @@ use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ExpressionTypeResolverExtension;
 use PHPStan\Type\Generic\GenericObjectType;
 use PHPStan\Type\MixedType;
+use PHPStan\Type\NeverType;
 use PHPStan\Type\NullType;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
@@ -35,6 +36,11 @@ final class HigherOrderExpectationTypeExtension implements ExpressionTypeResolve
 
     public function getType(Expr $expr, Scope $scope): ?Type
     {
+        if (($expr instanceof PropertyFetch || $expr instanceof MethodCall)
+            && (new NeverType)->isSuperTypeOf($scope->getType($expr->var))->yes()) {
+            return null;
+        }
+
         if ($expr instanceof PropertyFetch) {
             return $this->resolvePropertyFetch($expr, $scope);
         }
