@@ -26,6 +26,12 @@ final class PestTestCaseWithTraitsType extends ObjectType
         parent::__construct($className);
     }
 
+    /** @return list<class-string> */
+    public function getTraitNames(): array
+    {
+        return $this->traitNames;
+    }
+
     #[Override]
     public function hasMethod(string $methodName): TrinaryLogic
     {

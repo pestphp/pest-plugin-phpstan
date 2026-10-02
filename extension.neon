@@ -100,7 +100,7 @@ services:
             - phpstan.broker.methodsClassReflectionExtension
 
     -
-        class: Pest\PHPStan\Type\Pest\ProtectedMethodCallIgnoreExtension
+        class: Pest\PHPStan\Type\Pest\TestCaseMemberVisibilityIgnoreExtension
         tags:
             - phpstan.ignoreErrorExtension
 
