@@ -17,6 +17,7 @@ return RectorConfig::configure()
         ReadOnlyClassRector::class,
         __DIR__.'/tests/Type/data',
         __DIR__.'/tests/Rules/data',
+        __DIR__.'/tests/Type/Fixtures/PrivateMembers',
         __DIR__.'/tests/Fixtures/CustomTestCaseInference',
         __DIR__.'/tests/Fixtures/UsesHookClosureThis',
         UsesToExtendRector::class => [
