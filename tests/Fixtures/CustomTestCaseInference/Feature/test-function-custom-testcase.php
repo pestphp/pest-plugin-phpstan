@@ -6,6 +6,7 @@ namespace TestFunctionCustomTestCase;
 
 use Pest\PendingCalls\TestCall;
 use Tests\Type\Fixtures\CustomTestCase;
+use Tests\Type\Fixtures\Post;
 
 use function PHPStan\Testing\assertType;
 
@@ -32,6 +33,17 @@ function testMethodCallThroughBareTestCall(): void
 {
     it('resolves methods through a bare test()', function (): void {
         assertType('string', test()->createHelper());
+    });
+}
+
+function testHookPropertyReadThroughBareTestCall(): void
+{
+    beforeEach(function (): void {
+        test()->post = new Post;
+    });
+
+    it('resolves a hook property read through a bare test()', function (): void {
+        assertType(Post::class, test()->post);
     });
 }
 
