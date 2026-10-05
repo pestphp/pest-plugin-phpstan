@@ -30,10 +30,12 @@ final class PestFileDiscoverer
 
     /**
      * @param  string[]  $scanPaths  PHPStan's configured analysis paths
+     * @param  string[]|null  $configPaths  Explicit paths for Pest.php discovery, or null to use analysis paths and the project root
      */
     public function __construct(
         private readonly array $scanPaths,
         private readonly string $rootDir = '',
+        private readonly ?array $configPaths = null,
     ) {
         $this->parser = (new ParserFactory)->createForNewestSupportedVersion();
     }
@@ -49,9 +51,9 @@ final class PestFileDiscoverer
 
         $files = [];
 
-        $scanPaths = $this->scanPaths;
+        $scanPaths = $this->configPaths ?? $this->scanPaths;
 
-        if ($this->rootDir !== '') {
+        if ($this->configPaths === null && $this->rootDir !== '') {
             $scanPaths[] = $this->rootDir;
         }
 
