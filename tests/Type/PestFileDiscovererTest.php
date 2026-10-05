@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Type;
 
+use FilesystemIterator;
 use Pest\PHPStan\Type\Pest\PestFileDiscoverer;
 use PHPStan\DependencyInjection\ContainerFactory;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 
 $fixtureDir = static function (string $name): string {
@@ -112,13 +115,33 @@ test('PHPStan passes explicit configuration paths to the discovery service', fun
     $dir = $fixtureDir('pesthook-scope');
     $outside = $fixtureDir('pestconfig-matrix');
     $project = dirname(__DIR__, 2);
-    $container = new ContainerFactory($project)->create(sys_get_temp_dir().'/pest-discovery-container', [
-        $project.'/extension.neon',
-        __DIR__.'/Fixtures/pest-discovery.neon',
-    ], [$outside]);
-    $instance = $container->getByType(PestFileDiscoverer::class);
+    $temporaryDir = sys_get_temp_dir().'/pest-discovery-container-'.bin2hex(random_bytes(16));
+    mkdir($temporaryDir, 0700);
 
-    expect($instance->isPestConfigFile($dir.'/Pest.php'))->toBeTrue()
-        ->and($instance->isPestConfigFile($outside.'/Pest.php'))->toBeFalse()
-        ->and($instance->isPestConfigFile(__DIR__.'/../Pest.php'))->toBeTrue();
+    try {
+        $container = new ContainerFactory($project)->create($temporaryDir, [
+            $project.'/extension.neon',
+            __DIR__.'/Fixtures/pest-discovery.neon',
+        ], [$outside]);
+        $instance = $container->getByType(PestFileDiscoverer::class);
+
+        expect($instance->isPestConfigFile($dir.'/Pest.php'))->toBeTrue()
+            ->and($instance->isPestConfigFile($outside.'/Pest.php'))->toBeFalse()
+            ->and($instance->isPestConfigFile(__DIR__.'/../Pest.php'))->toBeTrue();
+    } finally {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($temporaryDir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getPathname());
+            } else {
+                unlink($file->getPathname());
+            }
+        }
+
+        rmdir($temporaryDir);
+    }
 });
