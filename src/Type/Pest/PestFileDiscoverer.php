@@ -198,7 +198,7 @@ final class PestFileDiscoverer
         foreach ($stmts as $stmt) {
             if ($stmt instanceof Use_) {
                 foreach ($stmt->uses as $use) {
-                    $alias = $use->alias !== null ? $use->alias->name : $use->name->getLast();
+                    $alias = $use->alias->name ?? $use->name->getLast();
                     $useMap[$alias] = $use->name->toString();
                 }
             }
@@ -207,7 +207,7 @@ final class PestFileDiscoverer
                 foreach ($stmt->stmts as $namespacedStmt) {
                     if ($namespacedStmt instanceof Use_) {
                         foreach ($namespacedStmt->uses as $use) {
-                            $alias = $use->alias !== null ? $use->alias->name : $use->name->getLast();
+                            $alias = $use->alias->name ?? $use->name->getLast();
                             $useMap[$alias] = $use->name->toString();
                         }
                     }
