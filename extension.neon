@@ -131,6 +131,11 @@ services:
         tags:
             - phpstan.rules.rule
 
+    -
+        class: Pest\PHPStan\Rules\BoundTestCasePrivateMemberRule
+        tags:
+            - phpstan.rules.rule
+
 rules:
     - Pest\PHPStan\Rules\DisallowedCallInDescribeRule
     - Pest\PHPStan\Rules\StaticTestClosureRule
@@ -144,3 +149,4 @@ rules:
     - Pest\PHPStan\Rules\DescribeWithoutTestsRule
     - Pest\PHPStan\Rules\InvalidGroupNameRule
     - Pest\PHPStan\Rules\RedundantLocalUseRule
+    - Pest\PHPStan\Rules\BoundTestCasePrivateMemberRule
