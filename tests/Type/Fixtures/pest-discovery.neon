@@ -1,0 +1,4 @@
+parameters:
+    pest:
+        configPaths:
+            - %currentWorkingDirectory%/tests/Type/Fixtures/pesthook-scope

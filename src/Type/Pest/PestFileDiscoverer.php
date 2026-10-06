@@ -30,10 +30,12 @@ final class PestFileDiscoverer
 
     /**
      * @param  string[]  $scanPaths  PHPStan's configured analysis paths
+     * @param  string[]|null  $configPaths  Explicit paths for Pest.php discovery, or null to use analysis paths and the project root
      */
     public function __construct(
         private readonly array $scanPaths,
         private readonly string $rootDir = '',
+        private readonly ?array $configPaths = null,
     ) {
         $this->parser = (new ParserFactory)->createForNewestSupportedVersion();
     }
@@ -49,9 +51,9 @@ final class PestFileDiscoverer
 
         $files = [];
 
-        $scanPaths = $this->scanPaths;
+        $scanPaths = $this->configPaths ?? $this->scanPaths;
 
-        if ($this->rootDir !== '') {
+        if ($this->configPaths === null && $this->rootDir !== '') {
             $scanPaths[] = $this->rootDir;
         }
 
@@ -196,7 +198,7 @@ final class PestFileDiscoverer
         foreach ($stmts as $stmt) {
             if ($stmt instanceof Use_) {
                 foreach ($stmt->uses as $use) {
-                    $alias = $use->alias !== null ? $use->alias->name : $use->name->getLast();
+                    $alias = $use->alias->name ?? $use->name->getLast();
                     $useMap[$alias] = $use->name->toString();
                 }
             }
@@ -205,7 +207,7 @@ final class PestFileDiscoverer
                 foreach ($stmt->stmts as $namespacedStmt) {
                     if ($namespacedStmt instanceof Use_) {
                         foreach ($namespacedStmt->uses as $use) {
-                            $alias = $use->alias !== null ? $use->alias->name : $use->name->getLast();
+                            $alias = $use->alias->name ?? $use->name->getLast();
                             $useMap[$alias] = $use->name->toString();
                         }
                     }

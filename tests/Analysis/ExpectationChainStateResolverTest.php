@@ -23,8 +23,8 @@ test('it resolves each node from its own scope', function (): void {
     $resolver = new ExpectationChainStateResolver;
     $intCall = expectationEachCall();
     $stringCall = expectationEachCall();
-    $intState = $resolver->resolve($intCall, scopeReturningExpectationOf(new IntegerType, fn (string $class): Scope => $this->createMock($class)));
-    $stringState = $resolver->resolve($stringCall, scopeReturningExpectationOf(new StringType, fn (string $class): Scope => $this->createMock($class)));
+    $intState = $resolver->resolve($intCall, scopeReturningExpectationOf(new IntegerType, fn (string $class): Scope => $this->createStub($class)));
+    $stringState = $resolver->resolve($stringCall, scopeReturningExpectationOf(new StringType, fn (string $class): Scope => $this->createStub($class)));
     expect($intState)->not->toBeNull()
         ->and($stringState)->not->toBeNull()
         ->and($intState->originalValueType->describe(VerbosityLevel::typeOnly()))->toBe('int')
@@ -36,7 +36,7 @@ test('it evicts cache entries when their node is freed', function (): void {
     $cache = cacheOf($resolver);
     expect($cache)->toBeEmpty();
     $call = expectationEachCall();
-    $resolver->resolve($call, scopeReturningExpectationOf(new IntegerType, fn (string $class): Scope => $this->createMock($class)));
+    $resolver->resolve($call, scopeReturningExpectationOf(new IntegerType, fn (string $class): Scope => $this->createStub($class)));
     expect($cache)->toHaveCount(1, 'The resolved node should be memoised.');
     unset($call);
     expect($cache)->toHaveCount(
@@ -50,10 +50,10 @@ function expectationEachCall(): MethodCall
     return new MethodCall(new Variable('expectation'), new Identifier('each'));
 }
 
-function scopeReturningExpectationOf(Type $valueType, callable $mockFactory): Scope
+function scopeReturningExpectationOf(Type $valueType, callable $stubFactory): Scope
 {
     $expectationType = new GenericObjectType(Expectation::class, [$valueType]);
-    $scope = $mockFactory(Scope::class);
+    $scope = $stubFactory(Scope::class);
     $scope->method('getType')->willReturn($expectationType);
 
     return $scope;

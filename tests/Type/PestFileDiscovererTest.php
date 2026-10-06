@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Type;
 
+use FilesystemIterator;
 use Pest\PHPStan\Type\Pest\PestFileDiscoverer;
+use PHPStan\DependencyInjection\ContainerFactory;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 
 $fixtureDir = static function (string $name): string {
@@ -70,5 +74,74 @@ test('every discovered file is itself recognised as a configuration file', funct
     foreach ($instance->discoverPestFiles() as $pestFile) {
         expect($instance->isPestConfigFile($pestFile))->toBeTrue()
             ->and(basename($pestFile))->toBe('Pest.php');
+    }
+});
+
+test('explicit configuration paths do not search analysis paths or the project root', function () use ($fixtureDir): void {
+    $dir = $fixtureDir('pesthook-scope');
+    $outside = $fixtureDir('pestconfig-matrix');
+    $instance = new PestFileDiscoverer([$outside], dirname(__DIR__, 2), [$dir]);
+
+    expect($instance->isPestConfigFile($dir.'/Pest.php'))->toBeTrue()
+        ->and($instance->isPestConfigFile($outside.'/Pest.php'))->toBeFalse()
+        ->and($instance->isPestConfigFile(__DIR__.'/../Pest.php'))->toBeTrue();
+});
+
+test('explicit configuration paths support multiple test directories', function () use ($fixtureDir): void {
+    $first = $fixtureDir('pesthook-scope');
+    $second = $fixtureDir('pestconfig-matrix');
+    $instance = new PestFileDiscoverer([], '', [$first, $second]);
+
+    expect($instance->isPestConfigFile($first.'/Pest.php'))->toBeTrue()
+        ->and($instance->isPestConfigFile($second.'/Pest.php'))->toBeTrue();
+});
+
+test('an empty explicit configuration path list disables discovery', function () use ($fixtureDir): void {
+    $dir = $fixtureDir('pestconfig-matrix');
+    $instance = new PestFileDiscoverer([$dir], dirname(__DIR__, 2), []);
+
+    expect($instance->discoverPestFiles())->toBeEmpty();
+});
+
+test('default discovery still searches the project root', function () use ($fixtureDir): void {
+    $dir = $fixtureDir('pesthook-scope');
+    $outside = $fixtureDir('pestconfig-matrix');
+    $instance = new PestFileDiscoverer([$dir], dirname($dir));
+
+    expect($instance->isPestConfigFile($outside.'/Pest.php'))->toBeTrue();
+});
+
+test('PHPStan passes explicit configuration paths to the discovery service', function () use ($fixtureDir): void {
+    $dir = $fixtureDir('pesthook-scope');
+    $outside = $fixtureDir('pestconfig-matrix');
+    $project = dirname(__DIR__, 2);
+    $temporaryDir = sys_get_temp_dir().'/pest-discovery-container-'.bin2hex(random_bytes(16));
+    mkdir($temporaryDir, 0700);
+
+    try {
+        $container = new ContainerFactory($project)->create($temporaryDir, [
+            $project.'/extension.neon',
+            __DIR__.'/Fixtures/pest-discovery.neon',
+        ], [$outside]);
+        $instance = $container->getByType(PestFileDiscoverer::class);
+
+        expect($instance->isPestConfigFile($dir.'/Pest.php'))->toBeTrue()
+            ->and($instance->isPestConfigFile($outside.'/Pest.php'))->toBeFalse()
+            ->and($instance->isPestConfigFile(__DIR__.'/../Pest.php'))->toBeTrue();
+    } finally {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($temporaryDir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getPathname());
+            } else {
+                unlink($file->getPathname());
+            }
+        }
+
+        rmdir($temporaryDir);
     }
 });
