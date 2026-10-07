@@ -288,17 +288,7 @@ final class PestHookPropertyReader
                 continue;
             }
 
-            if (! $var->var instanceof Variable) {
-                continue;
-            }
-
-            $thisVariable = $var->var;
-
-            if (! is_string($thisVariable->name)) {
-                continue;
-            }
-
-            if ($thisVariable->name !== 'this') {
+            if (! $this->isTestCaseReference($var->var)) {
                 continue;
             }
 
@@ -328,6 +318,18 @@ final class PestHookPropertyReader
         }
 
         return $properties;
+    }
+
+    private function isTestCaseReference(Expr $expr): bool
+    {
+        // @note: a bare test() proxies the running test case, so `test()->name = …` sets the same property as `$this->name = …`.
+        if ($expr instanceof FuncCall) {
+            return $expr->name instanceof Name
+                && $expr->name->toString() === 'test'
+                && $expr->getArgs() === [];
+        }
+
+        return $expr instanceof Variable && $expr->name === 'this';
     }
 
     /**
