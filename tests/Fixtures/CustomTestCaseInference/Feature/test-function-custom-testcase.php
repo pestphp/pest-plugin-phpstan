@@ -24,9 +24,25 @@ function testBareTestCallInBeforeEach(): void
     });
 }
 
-function testBareTestCallInHelperFunction(): void
+function testBareTestCallInHelperFunctionKeepsDeclaredType(): void
 {
-    assertType(CustomTestCase::class, test());
+    assertType('Pest\\PendingCalls\\TestCall|Pest\\Support\\HigherOrderTapProxy', test());
+}
+
+function testBareTestCallInStaticClosureKeepsDeclaredType(): void
+{
+    it('keeps the declared type without $this', static function (): void {
+        assertType('Pest\\PendingCalls\\TestCall|Pest\\Support\\HigherOrderTapProxy', test());
+    });
+}
+
+function testBareTestCallInNestedArrowFunction(): void
+{
+    it('types a bare test() inside a nested arrow function', function (): void {
+        $resolve = fn () => test();
+
+        assertType(CustomTestCase::class, $resolve());
+    });
 }
 
 function testMethodCallThroughBareTestCall(): void
