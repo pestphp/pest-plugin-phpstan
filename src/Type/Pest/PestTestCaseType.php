@@ -19,6 +19,12 @@ final class PestTestCaseType
 
     public function resolve(string $filePath): Type
     {
+        return $this->resolveIfBound($filePath) ?? new ObjectType(TestCase::class);
+    }
+
+    public function resolveIfBound(string $filePath): ?Type
+    {
+        // @note: returns null when no binding covers the file, so callers can tell an unbound file from one bound to PHPUnit's TestCase.
         [$classNames, $traitNames] = $this->partition(
             $this->pestConfigReader->resolveFileBindings($filePath),
         );
@@ -29,6 +35,10 @@ final class PestTestCaseType
             );
 
             $traitNames = array_values(array_unique([...$directoryTraitNames, ...$traitNames]));
+        }
+
+        if ($classNames === [] && $traitNames === []) {
+            return null;
         }
 
         if ($classNames === []) {
