@@ -300,18 +300,6 @@ final class HigherOrderExpectationTypeExtension implements ExpressionTypeResolve
 
         $classReflection = $this->reflectionProvider->getClass(Expectation::class);
 
-        if ($classReflection->hasNativeMethod($methodName)) {
-            return true;
-        }
-
-        foreach ($classReflection->getResolvedMixinTypes() as $mixinType) {
-            foreach ($mixinType->getObjectClassReflections() as $mixinClassReflection) {
-                if ($mixinClassReflection->hasNativeMethod($methodName)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $classReflection->hasMethod($methodName);
     }
 }

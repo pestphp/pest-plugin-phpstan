@@ -1,4 +1,6 @@
 parameters:
+    pest:
+        configPaths: null
     universalObjectCratesClasses:
         - PHPUnit\Framework\TestCase
     scanDirectories:
@@ -6,12 +8,18 @@ parameters:
     stubFiles:
         - stubs/DescribeCall.stub
 
+parametersSchema:
+    pest: structure([
+        configPaths: schema(listOf(string()), nullable())
+    ])
+
 services:
     -
         class: Pest\PHPStan\Type\Pest\PestFileDiscoverer
         arguments:
             scanPaths: %paths%
             rootDir: %currentWorkingDirectory%
+            configPaths: %pest.configPaths%
 
     -
         class: Pest\PHPStan\Type\Pest\PestConfigReader
