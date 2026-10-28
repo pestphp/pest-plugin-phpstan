@@ -1,0 +1,8 @@
+includes:
+    - ../extension.neon
+
+services:
+    -
+        class: Tests\Rules\Fixtures\CustomExpectationsExtension
+        tags:
+            - phpstan.broker.methodsClassReflectionExtension

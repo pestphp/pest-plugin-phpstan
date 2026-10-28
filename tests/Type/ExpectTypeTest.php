@@ -16,6 +16,12 @@ test('test closure types', function (string $assertType, string $file, mixed ...
     yield from TestCase::gatherAssertTypes(__DIR__.'/data/test-closures.php');
 });
 
+test('bare test() call types', function (string $assertType, string $file, mixed ...$args): void {
+    $this->assertFileAsserts($assertType, $file, ...$args);
+})->with(function (): Iterator {
+    yield from TestCase::gatherAssertTypes(__DIR__.'/data/test-function.php');
+});
+
 test('with closure types', function (string $assertType, string $file, mixed ...$args): void {
     $this->assertFileAsserts($assertType, $file, ...$args);
 })->with(function (): Iterator {

@@ -306,3 +306,26 @@ function testBeforeEachMutuallyReferentialProperties(): void
         assertType('mixed', $this->cycleFirst);
     });
 }
+
+function testBeforeEachAssignmentThroughTestFunction(): void
+{
+    beforeEach(function (): void {
+        test()->viaTestFunction = new Post;
+    });
+
+    it('resolves a property a hook sets through test()', function (): void {
+        assertType(Post::class, $this->viaTestFunction);
+    });
+}
+
+function testBeforeEachAssignmentThroughTestFunctionWithLocalVariable(): void
+{
+    beforeEach(function (): void {
+        $author = new Author;
+        test()->viaTestFunctionLocal = $author;
+    });
+
+    it('resolves a local variable a hook sets through test()', function (): void {
+        assertType(Author::class, $this->viaTestFunctionLocal);
+    });
+}

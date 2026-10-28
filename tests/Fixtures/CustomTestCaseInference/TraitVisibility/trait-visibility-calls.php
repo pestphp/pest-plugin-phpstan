@@ -26,3 +26,9 @@ beforeEach(function (): void {
     $this->privateTraitMethod();
     $this::privateStaticTraitMethod();
 });
+
+function helperUsingBoundTraitMethods(): void
+{
+    test()->protectedTraitMethod();
+    test()->privateTraitMethod();
+}
