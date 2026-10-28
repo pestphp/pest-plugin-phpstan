@@ -15,6 +15,7 @@ test('a bare test() call types as the bound custom testcase', function (string $
     $this->assertFileAsserts($assertType, $file, ...$args);
 })->with(function (): Iterator {
     yield from CustomTestCaseTestCase::gatherAssertTypes(__DIR__.'/../Fixtures/CustomTestCaseInference/Feature/test-function-custom-testcase.php');
+    yield from CustomTestCaseTestCase::gatherAssertTypes(__DIR__.'/../Fixtures/CustomTestCaseInference/Feature/test-function-custom-todo.php');
 });
 
 test('custom testcase closure types when a class and a trait are bound', function (string $assertType, string $file, mixed ...$args): void {

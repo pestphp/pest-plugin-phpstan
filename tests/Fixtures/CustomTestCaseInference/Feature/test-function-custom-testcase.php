@@ -24,15 +24,18 @@ function testBareTestCallInBeforeEach(): void
     });
 }
 
-function testBareTestCallInHelperFunctionKeepsDeclaredType(): void
+function testBareTestCallInHelperFunction(): void
 {
-    assertType('Pest\\PendingCalls\\TestCall|Pest\\Support\\HigherOrderTapProxy', test());
+    assertType(CustomTestCase::class, test());
+    assertType('string', test()->createHelper());
 }
 
-function testBareTestCallInStaticClosureKeepsDeclaredType(): void
+function testBareTestCallInStaticCallback(): void
 {
-    it('keeps the declared type without $this', static function (): void {
-        assertType('Pest\\PendingCalls\\TestCall|Pest\\Support\\HigherOrderTapProxy', test());
+    it('uses the bound type in static callbacks without $this', function (): void {
+        $resolve = static fn () => test();
+
+        assertType(CustomTestCase::class, $resolve());
     });
 }
 
@@ -66,4 +69,11 @@ function testHookPropertyReadThroughBareTestCall(): void
 function testTestCallWithDescriptionIsUnchanged(): void
 {
     assertType(TestCall::class, test('has a description'));
+}
+
+function testTodoThroughBareTestCall(): void
+{
+    it('preserves the todo helper on the proxy', function (): void {
+        assertType(TestCall::class, test()->todo('implement this test'));
+    });
 }

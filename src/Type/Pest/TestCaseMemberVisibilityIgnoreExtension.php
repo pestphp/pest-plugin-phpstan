@@ -26,6 +26,10 @@ final class TestCaseMemberVisibilityIgnoreExtension implements IgnoreErrorExtens
 
     private const array CONSTANT_IDENTIFIERS = ['classConstant.protected', 'classConstant.private'];
 
+    public function __construct(
+        private readonly PestTestFunction $testFunction,
+    ) {}
+
     public function shouldIgnore(Error $error, Node $node, Scope $scope): bool
     {
         $identifier = $error->getIdentifier();
@@ -37,19 +41,18 @@ final class TestCaseMemberVisibilityIgnoreExtension implements IgnoreErrorExtens
             default => null,
         };
 
-        if (! $receiver instanceof Variable || $receiver->name !== 'this') {
+        if ($receiver instanceof Expr && $this->testFunction->isBareCall($receiver, $scope)) {
+            $thisType = $scope->getType($receiver);
+        } elseif (
+            $receiver instanceof Variable
+            && $receiver->name === 'this'
+            && $scope->isInAnonymousFunction()
+            && $scope->hasVariableType('this')->yes()
+        ) {
+            $thisType = $scope->getVariableType('this');
+        } else {
             return false;
         }
-
-        if (! $scope->isInAnonymousFunction()) {
-            return false;
-        }
-
-        if (! $scope->hasVariableType('this')->yes()) {
-            return false;
-        }
-
-        $thisType = $scope->getVariableType('this');
 
         if (! new ObjectType(TestCase::class)->isSuperTypeOf($thisType)->yes()) {
             return false;

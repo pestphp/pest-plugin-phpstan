@@ -16,11 +16,12 @@ final class TestFunctionReturnTypeExtension implements DynamicFunctionReturnType
 {
     public function __construct(
         private readonly PestTestCaseType $pestTestCaseType,
+        private readonly PestTestFunction $testFunction,
     ) {}
 
     public function isFunctionSupported(FunctionReflection $functionReflection): bool
     {
-        return $functionReflection->getName() === 'test';
+        return $this->testFunction->supports($functionReflection);
     }
 
     public function getTypeFromFunctionCall(
@@ -32,21 +33,20 @@ final class TestFunctionReturnTypeExtension implements DynamicFunctionReturnType
             return null;
         }
 
-        if (! $this->pestTestCaseType->resolveIfBound($scope->getFile()) instanceof Type) {
+        $boundType = $this->pestTestCaseType->resolveIfBound($scope->getFile());
+
+        if (! $boundType instanceof Type) {
             return null;
         }
 
-        if (! $scope->hasVariableType('this')->yes()) {
-            return null;
+        if ($scope->hasVariableType('this')->yes()) {
+            $thisType = $scope->getVariableType('this');
+
+            if (new ObjectType(TestCase::class)->isSuperTypeOf($thisType)->yes()) {
+                return $thisType;
+            }
         }
 
-        // @note: a bare test() proxies the running test case, so it only gets the test case type where $this is the test case; helper functions and unbound files keep the declared type.
-        $thisType = $scope->getVariableType('this');
-
-        if (! new ObjectType(TestCase::class)->isSuperTypeOf($thisType)->yes()) {
-            return null;
-        }
-
-        return $thisType;
+        return $boundType;
     }
 }
