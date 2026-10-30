@@ -19,6 +19,8 @@ it('tests higher order methods', function (): void {
 
     expect('string')->foo();
 
+    expect(Post::class)->foo();
+
     expect($policy)
         ->view()->toBeTrue()
         ->invalidMethod()->toBeTrue();

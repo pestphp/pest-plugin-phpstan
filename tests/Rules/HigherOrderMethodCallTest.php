@@ -27,8 +27,12 @@ test('higher order methods report errors on undefined methods on value type', fu
             20,
         ],
         [
+            'Call to an undefined method Pest\Expectation<string>::foo().',
+            22,
+        ],
+        [
             'Call to an undefined method Pest\Expectations\HigherOrderExpectation<Pest\Expectation<Tests\Type\Fixtures\Policy>, Tests\Type\Fixtures\Policy>::invalidMethod().',
-            24,
+            26,
         ],
     ]);
 });

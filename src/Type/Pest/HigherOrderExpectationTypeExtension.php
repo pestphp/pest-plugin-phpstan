@@ -217,7 +217,7 @@ final class HigherOrderExpectationTypeExtension implements ExpressionTypeResolve
 
     private function resolveMethodReturnType(Type $objectType, string $methodName, MethodCall $expr, Scope $scope): Type
     {
-        if ($objectType->hasMethod($methodName)->no()) {
+        if ($objectType->hasMethod($methodName)->no() || $objectType->isObject()->no()) {
             return new MixedType;
         }
 
