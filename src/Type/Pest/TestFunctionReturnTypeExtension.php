@@ -33,7 +33,7 @@ final class TestFunctionReturnTypeExtension implements DynamicFunctionReturnType
             return null;
         }
 
-        $boundType = $this->pestTestCaseType->resolveIfBound($scope->getFile());
+        $boundType = $this->pestTestCaseType->resolveIfClassBound($scope->getFile());
 
         if (! $boundType instanceof Type) {
             return null;

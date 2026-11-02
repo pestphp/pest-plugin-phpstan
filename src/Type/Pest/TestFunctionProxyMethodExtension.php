@@ -40,7 +40,7 @@ final readonly class TestFunctionProxyMethodExtension implements ExpressionTypeR
             && $node->name instanceof Identifier
             && $node->name->toLowerString() === 'todo'
             && $this->testFunction->isBareCall($node->var, $scope)
-            && $this->testCaseType->resolveIfBound($scope->getFile()) instanceof Type
+            && $this->testCaseType->resolveIfClassBound($scope->getFile()) instanceof Type
             && ! $scope->getType($node->var)->hasMethod('todo')->yes()
             && $this->testFunction->supportsTodoHelper($scope);
     }
