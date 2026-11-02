@@ -25,17 +25,7 @@ final class PestTestCaseType
     public function resolveIfBound(string $filePath): ?Type
     {
         // @note: returns null when no binding covers the file, so callers can tell an unbound file from one bound to PHPUnit's TestCase.
-        [$classNames, $traitNames] = $this->partition(
-            $this->pestConfigReader->resolveFileBindings($filePath),
-        );
-
-        if ($classNames === []) {
-            [$classNames, $directoryTraitNames] = $this->partition(
-                $this->pestConfigReader->resolveBindings($filePath),
-            );
-
-            $traitNames = array_values(array_unique([...$directoryTraitNames, ...$traitNames]));
-        }
+        [$classNames, $traitNames] = $this->resolveFileClassAndTraitNames($filePath);
 
         if ($classNames === [] && $traitNames === []) {
             return null;
@@ -45,17 +35,19 @@ final class PestTestCaseType
             $classNames[] = TestCase::class;
         }
 
-        $classType = $this->toObjectType($classNames);
+        return $this->toTestCaseType($classNames, $traitNames);
+    }
 
-        if ($traitNames === []) {
-            return $classType;
+    public function resolveIfClassBound(string $filePath): ?Type
+    {
+        // @note: returns null unless a binding covers the file with a test case class, as traits bound without in() also cover files that are not tests.
+        [$classNames, $traitNames] = $this->resolveFileClassAndTraitNames($filePath);
+
+        if ($classNames === []) {
+            return null;
         }
 
-        return new PestTestCaseWithTraitsType(
-            $classNames[0],
-            $traitNames,
-            $this->reflectionProvider,
-        );
+        return $this->toTestCaseType($classNames, $traitNames);
     }
 
     /**
@@ -70,6 +62,35 @@ final class PestTestCaseType
             return null;
         }
 
+        return $this->toTestCaseType($classNames, $traitNames);
+    }
+
+    /**
+     * @return array{list<class-string>, list<class-string>}
+     */
+    private function resolveFileClassAndTraitNames(string $filePath): array
+    {
+        [$classNames, $traitNames] = $this->partition(
+            $this->pestConfigReader->resolveFileBindings($filePath),
+        );
+
+        if ($classNames === []) {
+            [$classNames, $directoryTraitNames] = $this->partition(
+                $this->pestConfigReader->resolveBindings($filePath),
+            );
+
+            $traitNames = array_values(array_unique([...$directoryTraitNames, ...$traitNames]));
+        }
+
+        return [$classNames, $traitNames];
+    }
+
+    /**
+     * @param  non-empty-list<class-string>  $classNames
+     * @param  list<class-string>  $traitNames
+     */
+    private function toTestCaseType(array $classNames, array $traitNames): Type
+    {
         if ($traitNames === []) {
             return $this->toObjectType($classNames);
         }
